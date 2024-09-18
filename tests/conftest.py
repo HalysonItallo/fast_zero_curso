@@ -4,22 +4,27 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from fast_zero.app import app
-from fast_zero.models.user_model import table_registry
+from fast_zero.database import get_session, model_registry
 
 
 @pytest.fixture()
-def client():
-    return TestClient(app)
+def client(session):
+    def get_session_override():
+        return session
+
+    with TestClient(app) as client:
+        app.dependency_overrides[get_session] = get_session_override
+        yield client
+
+    app.dependency_overrides.clear()
 
 
 @pytest.fixture()
 def session():
     engine = create_engine("sqlite:///:memory:")
-    # Cria a tabela usando os metadados
-    table_registry.metadata.create_all(engine)
+    model_registry.metadata.create_all(engine)
 
     with Session(engine) as session:
         yield session
 
-    # Deleta a tabela usando os metadados
-    table_registry.metadata.drop_all(engine)
+    model_registry.metadata.drop_all(engine)
