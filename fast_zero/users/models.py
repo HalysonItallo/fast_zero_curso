@@ -9,7 +9,6 @@ from fast_zero.database import model_registry
 @model_registry.mapped_as_dataclass
 class User:
     __tablename__ = "users"
-    __table_args__ = {"extend_existing": True}
 
     id: Mapped[int] = mapped_column(init=False, primary_key=True)
     username: Mapped[str] = mapped_column(unique=True)

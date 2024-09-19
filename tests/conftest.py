@@ -1,6 +1,6 @@
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
+from sqlalchemy import StaticPool, create_engine
 from sqlalchemy.orm import Session
 
 from fast_zero.app import app
@@ -21,7 +21,11 @@ def client(session):
 
 @pytest.fixture()
 def session():
-    engine = create_engine("sqlite:///:memory:")
+    engine = create_engine(
+        "sqlite:///:memory:",
+        connect_args={"check_same_thread": False},
+        poolclass=StaticPool,
+    )
     model_registry.metadata.create_all(engine)
 
     with Session(engine) as session:
