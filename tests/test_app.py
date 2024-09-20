@@ -83,7 +83,7 @@ def test_detail_users_is_success(client, user):
     assert response.status_code == HTTPStatus.OK
 
     expected = {
-        "id": 1,
+        "id": user.id,
         "username": "Teste",
         "email": "teste@test.com",
     }
@@ -103,9 +103,12 @@ def test_detail_users_should_be_raise_excetion_when_user_id_is_not_valid(client)
     assert response.json() == expected
 
 
-def test_update_users_is_success(client, user):
+def test_update_users_is_success(client, user, token):
     response = client.put(
-        "/users/1",
+        f"/users/{user.id}",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
         json={
             "username": "bob",
             "email": "bob@example.com",
@@ -118,41 +121,141 @@ def test_update_users_is_success(client, user):
     assert response.json() == {
         "username": "bob",
         "email": "bob@example.com",
-        "id": 1,
+        "id": user.id,
     }
 
 
-def test_update_users_should_be_raise_excetion_when_user_id_is_not_valid(client):
+def test_update_users_should_be_raise_excetion_when_user_not_authorization(client, token):
     payload = {
         "username": "newusername",
         "email": "test@newtest.com",
         "password": "password",
     }
 
-    response = client.put("/users/2", json=payload)
+    response = client.put(
+        "/users/2",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+        json=payload,
+    )
 
-    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.status_code == HTTPStatus.FORBIDDEN
 
     expected = {
-        "detail": "User not found!",
+        "detail": "Not enough permissions",
     }
 
     assert response.json() == expected
 
 
-def test_delete_users_is_success(client, user):
-    response = client.delete("/users/1")
+def test_update_users_should_be_raise_excetion_when_username_already_exists(
+    client,
+    user,
+    token,
+):
+    payload = {
+        "username": "Teste",
+        "email": "test@newtest.com",
+        "password": "password",
+    }
+
+    response = client.put(
+        f"/users/{user.id}",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+        json=payload,
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    expected = {
+        "detail": "Username already exists",
+    }
+
+    assert response.json() == expected
+
+
+def test_update_users_should_be_raise_excetion_when_email_already_exists(
+    client,
+    user,
+    token,
+):
+    payload = {
+        "username": "newusername",
+        "email": "teste@test.com",
+        "password": "password",
+    }
+
+    response = client.put(
+        f"/users/{user.id}",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+        json=payload,
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+
+    expected = {
+        "detail": "Email already exists",
+    }
+
+    assert response.json() == expected
+
+
+def test_delete_users_is_success(client, token):
+    response = client.delete(
+        "/users/1",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
 
     assert response.status_code == HTTPStatus.NO_CONTENT
 
 
-def test_delete_users_should_be_raise_excetion_when_user_id_is_not_valid(client):
-    response = client.delete("/users/2")
+def test_delete_users_should_be_raise_excetion_when_user_not_authorization(client, token):
+    response = client.delete(
+        "/users/2",
+        headers={
+            "Authorization": f"Bearer {token}",
+        },
+    )
 
-    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.status_code == HTTPStatus.FORBIDDEN
 
     expected = {
-        "detail": "User not found!",
+        "detail": "Not enough permissions",
     }
 
+    assert response.json() == expected
+
+
+def test_get_token(client, user):
+    response = client.post(
+        "/token",
+        data={"username": user.email, "password": user.clean_password},
+    )
+
+    token = response.json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert token["token_type"] == "Bearer"
+    assert "access_token" in token
+
+
+def test_login_users_should_be_raise_excetion_when_not_valid_credentials(client, user):
+    response = client.post(
+        "/token",
+        data={
+            "username": user.email,
+            "password": "not valid password",
+        },
+    )
+
+    expected = {"detail": "Incorrect email or password"}
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json() == expected
