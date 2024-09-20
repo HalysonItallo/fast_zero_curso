@@ -1,6 +1,6 @@
-from http import HTTPStatus
+from fastapi import status
 
-from fast_zero.users.user_schema import UserResponse
+from fast_zero.users.schema import UserResponse
 
 
 def test_create_user_is_success(client):
@@ -12,7 +12,7 @@ def test_create_user_is_success(client):
 
     response = client.post("/users/", json=payload)
 
-    assert response.status_code == HTTPStatus.CREATED
+    assert response.status_code == status.HTTP_201_CREATED
 
     expected = {
         "id": 1,
@@ -32,7 +32,7 @@ def test_create_user_raise_400_when_username_if_exists(client, user):
 
     response = client.post("/users/", json=payload)
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     expected = {"detail": "Username already exists"}
 
@@ -48,7 +48,7 @@ def test_create_user_raise_400_when_email_if_exists(client, user):
 
     response = client.post("/users/", json=payload)
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     expected = {"detail": "Email already exists"}
 
@@ -58,7 +58,7 @@ def test_create_user_raise_400_when_email_if_exists(client, user):
 def test_read_users_is_success(client):
     response = client.get("/users/")
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == status.HTTP_200_OK
 
     expected = {"users": []}
 
@@ -70,7 +70,7 @@ def test_read_users_with_users_success(client, user):
 
     response = client.get("/users/")
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == status.HTTP_200_OK
 
     expected = {"users": [user_schema]}
 
@@ -80,7 +80,7 @@ def test_read_users_with_users_success(client, user):
 def test_detail_users_is_success(client, user):
     response = client.get("/users/1")
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == status.HTTP_200_OK
 
     expected = {
         "id": user.id,
@@ -94,7 +94,7 @@ def test_detail_users_is_success(client, user):
 def test_detail_users_should_be_raise_excetion_when_user_id_is_not_valid(client):
     response = client.get("/users/2")
 
-    assert response.status_code == HTTPStatus.NOT_FOUND
+    assert response.status_code == status.HTTP_404_NOT_FOUND
 
     expected = {
         "detail": "User not found!",
@@ -116,7 +116,7 @@ def test_update_users_is_success(client, user, token):
         },
     )
 
-    assert response.status_code == HTTPStatus.OK
+    assert response.status_code == status.HTTP_200_OK
 
     assert response.json() == {
         "username": "bob",
@@ -140,7 +140,7 @@ def test_update_users_should_be_raise_excetion_when_user_not_authorization(clien
         json=payload,
     )
 
-    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
     expected = {
         "detail": "Not enough permissions",
@@ -168,7 +168,7 @@ def test_update_users_should_be_raise_excetion_when_username_already_exists(
         json=payload,
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     expected = {
         "detail": "Username already exists",
@@ -196,7 +196,7 @@ def test_update_users_should_be_raise_excetion_when_email_already_exists(
         json=payload,
     )
 
-    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert response.status_code == status.HTTP_400_BAD_REQUEST
 
     expected = {
         "detail": "Email already exists",
@@ -213,7 +213,7 @@ def test_delete_users_is_success(client, token):
         },
     )
 
-    assert response.status_code == HTTPStatus.NO_CONTENT
+    assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
 def test_delete_users_should_be_raise_excetion_when_user_not_authorization(client, token):
@@ -224,38 +224,10 @@ def test_delete_users_should_be_raise_excetion_when_user_not_authorization(clien
         },
     )
 
-    assert response.status_code == HTTPStatus.FORBIDDEN
+    assert response.status_code == status.HTTP_403_FORBIDDEN
 
     expected = {
         "detail": "Not enough permissions",
     }
 
-    assert response.json() == expected
-
-
-def test_get_token(client, user):
-    response = client.post(
-        "/token",
-        data={"username": user.email, "password": user.clean_password},
-    )
-
-    token = response.json()
-
-    assert response.status_code == HTTPStatus.OK
-    assert token["token_type"] == "Bearer"
-    assert "access_token" in token
-
-
-def test_login_users_should_be_raise_excetion_when_not_valid_credentials(client, user):
-    response = client.post(
-        "/token",
-        data={
-            "username": user.email,
-            "password": "not valid password",
-        },
-    )
-
-    expected = {"detail": "Incorrect email or password"}
-
-    assert response.status_code == HTTPStatus.BAD_REQUEST
     assert response.json() == expected
