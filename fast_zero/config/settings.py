@@ -2,6 +2,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 INSTALLED_APPS = [
     "fast_zero.users",
+    "fast_zero.todos",
 ]
 
 
