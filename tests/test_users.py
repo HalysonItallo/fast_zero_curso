@@ -25,7 +25,7 @@ def test_create_user_is_success(client):
 
 def test_create_user_raise_400_when_username_if_exists(client, user):
     payload = {
-        "username": "Teste",
+        "username": user.username,
         "email": "test@test.com",
         "password": "password",
     }
@@ -42,7 +42,7 @@ def test_create_user_raise_400_when_username_if_exists(client, user):
 def test_create_user_raise_400_when_email_if_exists(client, user):
     payload = {
         "username": "testusername",
-        "email": "teste@test.com",
+        "email": user.email,
         "password": "password",
     }
 
@@ -78,14 +78,14 @@ def test_read_users_with_users_success(client, user):
 
 
 def test_detail_users_is_success(client, user):
-    response = client.get("/users/1")
+    response = client.get(f"/users/{user.id}")
 
     assert response.status_code == status.HTTP_200_OK
 
     expected = {
         "id": user.id,
-        "username": "Teste",
-        "email": "teste@test.com",
+        "username": user.username,
+        "email": user.email,
     }
 
     assert response.json() == expected
@@ -125,7 +125,7 @@ def test_update_users_is_success(client, user, token):
     }
 
 
-def test_update_users_should_be_raise_excetion_when_user_not_authorization(client, token):
+def test_update_users_should_be_raise_excetion_when_user_not_authorization(client, other_user, token):
     payload = {
         "username": "newusername",
         "email": "test@newtest.com",
@@ -133,7 +133,7 @@ def test_update_users_should_be_raise_excetion_when_user_not_authorization(clien
     }
 
     response = client.put(
-        "/users/2",
+        f"/users/{other_user.id}",
         headers={
             "Authorization": f"Bearer {token}",
         },
@@ -155,7 +155,7 @@ def test_update_users_should_be_raise_excetion_when_username_already_exists(
     token,
 ):
     payload = {
-        "username": "Teste",
+        "username": user.username,
         "email": "test@newtest.com",
         "password": "password",
     }
@@ -184,7 +184,7 @@ def test_update_users_should_be_raise_excetion_when_email_already_exists(
 ):
     payload = {
         "username": "newusername",
-        "email": "teste@test.com",
+        "email": user.email,
         "password": "password",
     }
 
@@ -205,9 +205,9 @@ def test_update_users_should_be_raise_excetion_when_email_already_exists(
     assert response.json() == expected
 
 
-def test_delete_users_is_success(client, token):
+def test_delete_users_is_success(client, user, token):
     response = client.delete(
-        "/users/1",
+        f"/users/{user.id}",
         headers={
             "Authorization": f"Bearer {token}",
         },
@@ -216,9 +216,9 @@ def test_delete_users_is_success(client, token):
     assert response.status_code == status.HTTP_204_NO_CONTENT
 
 
-def test_delete_users_should_be_raise_excetion_when_user_not_authorization(client, token):
+def test_delete_users_should_be_raise_excetion_when_user_not_authorization(client, other_user, token):
     response = client.delete(
-        "/users/2",
+        f"/users/{other_user.id}",
         headers={
             "Authorization": f"Bearer {token}",
         },

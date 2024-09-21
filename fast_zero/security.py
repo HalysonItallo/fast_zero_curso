@@ -2,7 +2,7 @@ from datetime import datetime, timedelta
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
-from jwt import DecodeError, decode, encode
+from jwt import ExpiredSignatureError, PyJWTError, decode, encode
 from pwdlib import PasswordHash
 from sqlalchemy import select
 from sqlalchemy.orm import Session
@@ -56,7 +56,13 @@ def get_current_user(session: Session = Depends(get_session), token: str = Depen
             raise credentials_exception
 
         token_data = TokenData(username=username)
-    except DecodeError:
+    except ExpiredSignatureError:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired token",
+            headers={"WWW-Authenticate": "Bearer"},
+        )
+    except PyJWTError:
         raise credentials_exception
 
     user_db = session.scalar(select(User).where(User.email == token_data.username))
